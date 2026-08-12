@@ -27,6 +27,12 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # This checks if GitHub is actually reading your secret
+          if [ -z "$HF_TOKEN" ]; then
+            echo "🚨 ERROR: HF_TOKEN is empty! GitHub is not reading the secret correctly."
+            exit 1
+          fi
+          
           cd dist
           git init
           git checkout -b main
@@ -34,5 +40,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git commit -m "Automated deployment to Hugging Face"
-          git remote add origin https://zemen:${HF_TOKEN}@huggingface.co/spaces/zemen/Portfolio
+          
+          # Push to Hugging Face
+          git remote add origin "https://zemen:${HF_TOKEN}@huggingface.co/spaces/zemen/Portfolio"
           git push -f origin main
