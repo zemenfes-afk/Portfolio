@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, ExternalLink, Upload, X, ArrowUpRight, ShieldCheck, Award, Home, User, Book, Calendar } from 'lucide-react';
+import samplePhoto from './Pictures/WhatsApp Image 2025-09-11 at 15.23.16_71615e55.jpg';
 
 /* ────────────────────────────────────────────────────────────────────
    DESIGN TOKENS
@@ -276,8 +277,24 @@ function IdentityGraph() {
 }
 
 /* ─── image upload primitive (in-memory only) ──────────────────────── */
-function PhotoSlot({ label, aspect = '4 / 3', circle = false, height }) {
-  const [src, setSrc] = useState(null);
+function PhotoSlot({ label, aspect = '4 / 3', circle = false, height, storageKey, defaultSrc }) {
+  // storageKey: optional localStorage key to persist the image (e.g. 'profileImage')
+  const [src, setSrc] = useState(() => {
+    try {
+      if (storageKey) {
+        const v = localStorage.getItem(storageKey);
+        if (v) return v;
+      }
+    } catch (e) { /* ignore */ }
+    return defaultSrc || null;
+  });
+
+  const persist = (dataUrl) => {
+    setSrc(dataUrl);
+    if (!storageKey) return;
+    try { localStorage.setItem(storageKey, dataUrl); } catch (e) { /* ignore */ }
+  };
+
   const handle = (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -295,17 +312,25 @@ function PhotoSlot({ label, aspect = '4 / 3', circle = false, height }) {
         const sx = (img.width - minSide) / 2;
         const sy = (img.height - minSide) / 2;
         ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-        setSrc(canvas.toDataURL('image/jpeg', 0.9));
+        persist(canvas.toDataURL('image/jpeg', 0.9));
       };
       img.src = ev.target.result;
     };
     r.readAsDataURL(f);
   };
 
+  const remove = (e) => {
+    e.stopPropagation();
+    setSrc(null);
+    if (storageKey) {
+      try { localStorage.removeItem(storageKey); } catch (e) { /* ignore */ }
+    }
+  };
+
   return (
     <div className="zhg-upload" style={{ aspectRatio: height ? undefined : aspect, height, width: height || undefined, borderRadius: circle ? '50%' : 10, overflow: 'hidden' }}>
       {src && (
-        <div className="zhg-remove" onClick={(e) => { e.stopPropagation(); setSrc(null); }}>
+        <div className="zhg-remove" onClick={remove}>
           <X size={12} />
         </div>
       )}
@@ -412,7 +437,7 @@ function Hero() {
           <div className="zhg-fade">
             <div className="zhg-kicker-pill"><span className="zhg-kicker-dot" /> M.Sc. CyberMACS · Kadir Has University</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-              <PhotoSlot label="Profile picture" height={140} />
+              <PhotoSlot label="Profile picture" height={140} storageKey="userPhoto1" defaultSrc={samplePhoto} circle={true} />
               <div>
                 <h1 className="zhg-display">Zemenfes<br/>Hailemariam<br/>Gebremedhin</h1>
                 <p className="zhg-hero-lede">
@@ -629,28 +654,21 @@ function Gallery() {
   const [images, setImages] = React.useState([]);
 
   React.useEffect(() => {
-    // Import images from src/Pictures at build time (if present)
-    // Use a broader glob and filter for common image extensions to be robust.
+    // Import static images from src/Pictures at build time
     const modules = import.meta.glob('/src/Pictures/*', { eager: true });
     const entries = Object.keys(modules)
       .filter((p) => /\.(png|jpe?g|webp|gif)$/i.test(p))
-      .map((p) => ({ path: p, url: modules[p].default || modules[p] }));
-    if (entries.length === 0) {
-      setImages([]);
-      return;
-    }
-    Promise.all(entries.map(async (e) => {
-      try {
-        const res = await fetch(e.url);
-        const blob = await res.blob();
-        return { name: e.path.split('/').pop(), url: e.url, size: blob.size };
-      } catch (err) {
-        return { name: e.path.split('/').pop(), url: e.url, size: 0 };
-      }
-    })).then(setImages);
-  }, []);
+      .map((p) => ({ name: p.split('/').pop(), url: modules[p].default || modules[p] }));
 
-  const fmt = (n) => n >= 1e6 ? (n/1e6).toFixed(2)+' MB' : (n/1e3).toFixed(1)+' KB';
+    // Load up to two user-uploaded images from localStorage
+    const userImages = [];
+    try {
+      const a = localStorage.getItem('userPhoto1'); if (a) userImages.push({ name: 'You (1)', url: a, user: true });
+      const b = localStorage.getItem('userPhoto2'); if (b) userImages.push({ name: 'You (2)', url: b, user: true });
+    } catch (e) { /* ignore */ }
+
+    setImages([...userImages, ...entries]);
+  }, []);
 
   return (
     <section className="zhg-section zhg-section--alt">
@@ -658,52 +676,33 @@ function Gallery() {
         <div className="zhg-eyebrow">Media</div>
         <div className="zhg-section-head">
           <h2 className="zhg-display">Photos</h2>
-          <div className="zhg-section-note">Thumbnails are shown at a uniform 4:3 ratio. Sizes are measured from <code>src/Pictures</code>.</div>
+          <div className="zhg-section-note">Thumbnails are shown at a uniform 4:3 ratio. You can add up to two personal photos below.</div>
         </div>
 
         {images.length === 0 ? (
-          <div style={{ color: 'var(--ink-faint)' }}>No images found in <strong>src/Pictures</strong>. You can still upload images using the tiles below.</div>
+          <div style={{ color: 'var(--ink-faint)' }}>No images found in <strong>src/Pictures</strong>. Add personal photos using the two upload tiles below.</div>
         ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
-              {images.map((im, i) => (
-                <div key={i} style={{ borderRadius: 8, overflow: 'hidden', background: 'var(--panel)' }}>
-                  <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
-                    <img src={im.url} alt={im.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  </div>
-                  <div style={{ padding: 8, fontSize: 12, color: 'var(--ink-dim)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{im.name}</span>
-                    <span>{fmt(im.size)}</span>
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
+            {images.map((im, i) => (
+              <div key={i} style={{ borderRadius: 8, overflow: 'hidden', background: 'var(--panel)' }}>
+                <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
+                  <img src={im.url} alt={im.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
-              ))}
-            </div>
-            <div style={{ marginBottom: 18 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', color: 'var(--ink-dim)', fontSize: 12 }}>
-                    <th style={{ padding: 8 }}>File</th>
-                    <th style={{ padding: 8 }}>Size</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {images.map((im, i) => (
-                    <tr key={i} style={{ borderTop: '1px solid var(--line)', color: 'var(--ink)' }}>
-                      <td style={{ padding: 8 }}>{im.name}</td>
-                      <td style={{ padding: 8 }}>{fmt(im.size)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+                <div style={{ padding: 8, fontSize: 12, color: 'var(--ink-dim)' }}>
+                  <span>{im.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
-        <div className="zhg-masonry">
-          {/* Keep interactive upload tiles for manual uploads (session-only) */}
-          {['Conference', 'Campus or lab', 'Award ceremony', 'Research team', 'Additional'].map((s, i) => (
-            <PhotoSlot key={i} label={s} height="100%" />
-          ))}
+        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <div style={{ flex: 1 }}>
+            <PhotoSlot label="Add profile/gallery photo 1" height="160px" storageKey="userPhoto1" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <PhotoSlot label="Add profile/gallery photo 2" height="160px" storageKey="userPhoto2" />
+          </div>
         </div>
       </div>
     </section>
