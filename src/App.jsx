@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Linkedin, Github, Upload, X, ArrowUpRight, ShieldCheck, Award } from 'lucide-react';
+import { Mail, Phone, MapPin, ExternalLink, Upload, X, ArrowUpRight, ShieldCheck, Award, Home, User, Book, Calendar } from 'lucide-react';
 
 /* ────────────────────────────────────────────────────────────────────
    DESIGN TOKENS
@@ -282,18 +282,37 @@ function PhotoSlot({ label, aspect = '4 / 3', circle = false, height }) {
     const f = e.target.files[0];
     if (!f) return;
     const r = new FileReader();
-    r.onload = (ev) => setSrc(ev.target.result);
+    r.onload = (ev) => {
+      // Crop to square and resize to 400x400 for a formal profile picture
+      const img = new Image();
+      img.onload = () => {
+        const size = 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+        setSrc(canvas.toDataURL('image/jpeg', 0.9));
+      };
+      img.src = ev.target.result;
+    };
     r.readAsDataURL(f);
   };
+
   return (
-    <div className="zhg-upload" style={{ aspectRatio: height ? undefined : aspect, height, borderRadius: circle ? '50%' : 10 }}>
+    <div className="zhg-upload" style={{ aspectRatio: height ? undefined : aspect, height, width: height || undefined, borderRadius: circle ? '50%' : 10, overflow: 'hidden' }}>
       {src && (
         <div className="zhg-remove" onClick={(e) => { e.stopPropagation(); setSrc(null); }}>
           <X size={12} />
         </div>
       )}
       <input type="file" accept="image/*" onChange={handle} />
-      {src ? <img src={src} alt={label} /> : (
+      {src ? (
+        <img src={src} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: circle ? '50%' : 10 }} />
+      ) : (
         <div style={{ textAlign: 'center', padding: '0.6rem', pointerEvents: 'none' }}>
           <Upload size={circle ? 22 : 16} color="var(--ink-faint)" style={{ marginBottom: 5 }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--ink-dim)', letterSpacing: '0.03em' }}>{label}</div>
@@ -386,18 +405,23 @@ const SKILLS = ['Python', 'MATLAB', 'SQL', 'Deep Learning', 'Reinforcement Learn
 /* ─── HERO ──────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="zhg-hero">
+    <section id="home" className="zhg-hero">
       <div className="zhg-hero-grid" />
       <div className="zhg-wrap-lg">
         <div className="zhg-hero-inner">
           <div className="zhg-fade">
             <div className="zhg-kicker-pill"><span className="zhg-kicker-dot" /> M.Sc. CyberMACS · Kadir Has University</div>
-            <h1 className="zhg-display">Zemenfes<br/>Hailemariam<br/>Gebremedhin</h1>
-            <p className="zhg-hero-lede">
-              Researching <em>adversarial machine learning</em> and <em>decentralized identity</em> —
-              building security systems that are accurate, explainable, and resistant to the adversaries
-              of tomorrow, including <strong>quantum-capable</strong> ones.
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+              <PhotoSlot label="Profile picture" height={140} />
+              <div>
+                <h1 className="zhg-display">Zemenfes<br/>Hailemariam<br/>Gebremedhin</h1>
+                <p className="zhg-hero-lede">
+                  Researching <em>adversarial machine learning</em> and <em>decentralized identity</em> —
+                  building security systems that are accurate, explainable, and resistant to the adversaries
+                  of tomorrow, including <strong>quantum-capable</strong> ones.
+                </p>
+              </div>
+            </div>
             <div className="zhg-stat-row">
               <div><div className="zhg-stat-num">4</div><div className="zhg-stat-lbl">Publications</div></div>
               <div><div className="zhg-stat-num">3</div><div className="zhg-stat-lbl">Research Roles</div></div>
@@ -406,8 +430,8 @@ function Hero() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
               <a className="zhg-btn zhg-btn--solid" href="mailto:zemenfeshailemariam@gmail.com"><Mail size={13}/> Get in touch</a>
-              <a className="zhg-btn" href="https://www.linkedin.com/in/zemenhaile" target="_blank" rel="noopener"><Linkedin size={13}/> LinkedIn</a>
-              <a className="zhg-btn" href="https://github.com/zemenfes-afk" target="_blank" rel="noopener"><Github size={13}/> GitHub</a>
+              <a className="zhg-btn" href="https://www.linkedin.com/in/zemenhaile" target="_blank" rel="noopener"><ExternalLink size={13}/> LinkedIn</a>
+              <a className="zhg-btn" href="https://github.com/zemenfes-afk" target="_blank" rel="noopener"><ExternalLink size={13}/> GitHub</a>
             </div>
           </div>
           <div className="zhg-fade zhg-graph-wrap" style={{ animationDelay: '0.15s' }}>
@@ -443,7 +467,7 @@ function Focus() {
 /* ─── ABOUT (pull-quote style) ──────────────────────────────────────── */
 function About() {
   return (
-    <section className="zhg-section zhg-section--alt">
+    <section id="about" className="zhg-section zhg-section--alt">
       <div className="zhg-wrap">
         <div className="zhg-eyebrow">Profile</div>
         <p className="zhg-display" style={{ fontSize: 'clamp(1.3rem, 2.6vw, 1.7rem)', fontWeight: 500, lineHeight: 1.5, maxWidth: 780 }}>
@@ -461,7 +485,7 @@ function About() {
 /* ─── PUBLICATIONS ──────────────────────────────────────────────────── */
 function Publications() {
   return (
-    <section className="zhg-section">
+    <section id="publications" className="zhg-section">
       <div className="zhg-wrap">
         <div className="zhg-eyebrow">Bibliography</div>
         <div className="zhg-section-head">
@@ -499,7 +523,7 @@ function Publications() {
 /* ─── TIMELINE (research + teaching combined) ───────────────────────── */
 function Timeline() {
   return (
-    <section className="zhg-section zhg-section--alt">
+    <section id="timeline" className="zhg-section zhg-section--alt">
       <div className="zhg-wrap">
         <div className="zhg-eyebrow">Appointments</div>
         <div className="zhg-section-head"><h2 className="zhg-display">Research & Teaching</h2></div>
@@ -522,7 +546,7 @@ function Timeline() {
 /* ─── EDUCATION strip ────────────────────────────────────────────────── */
 function Education() {
   return (
-    <section className="zhg-section">
+    <section id="education" className="zhg-section">
       <div className="zhg-wrap">
         <div className="zhg-eyebrow">Credentials</div>
         <div className="zhg-section-head"><h2 className="zhg-display">Education</h2></div>
@@ -531,11 +555,11 @@ function Education() {
             <div className="zhg-tl-date">Sep 2025 – Expected Sep 2027</div>
             <div className="zhg-tl-role">M.Sc. in Applied Cybersecurity — CyberMACS (Erasmus Mundus)</div>
             <div className="zhg-tl-org">Kadir Has University, Istanbul, Türkiye</div>
-            <div style={{ color: 'var(--ink-faint)', fontSize: 12.5, fontStyle: 'italic', marginTop: 4 }}>Current CGPA: 3.3 / 4.0 (1st year)</div>
+            
           </div>
           <div style={{ borderLeft: '2px solid var(--line-2)', paddingLeft: '1.2rem' }}>
             <div className="zhg-tl-date">Aug 2012 – Jul 2017</div>
-            <div className="zhg-tl-role">B.Sc. in Computer Science and Engineering — GPA 3.5/4.0</div>
+            <div className="zhg-tl-role">B.Sc. in Computer Science and Engineering</div>
             <div className="zhg-tl-org">Mekelle University, Mekelle, Ethiopia</div>
             <div style={{ color: 'var(--ink-faint)', fontSize: 12.5, fontStyle: 'italic', marginTop: 4 }}>Thesis: "Malaria Disease Detection and Classification Using Image Processing"</div>
           </div>
@@ -602,17 +626,84 @@ function HonorsSkills() {
 
 /* ─── GALLERY (masonry upload) ──────────────────────────────────────── */
 function Gallery() {
-  const slots = ['Profile / headshot', 'Conference', 'Campus or lab', 'Award ceremony', 'Research team', 'Additional'];
+  const [images, setImages] = React.useState([]);
+
+  React.useEffect(() => {
+    // Import images from src/Pictures at build time (if present)
+    // Use a broader glob and filter for common image extensions to be robust.
+    const modules = import.meta.glob('/src/Pictures/*', { eager: true });
+    const entries = Object.keys(modules)
+      .filter((p) => /\.(png|jpe?g|webp|gif)$/i.test(p))
+      .map((p) => ({ path: p, url: modules[p].default || modules[p] }));
+    if (entries.length === 0) {
+      setImages([]);
+      return;
+    }
+    Promise.all(entries.map(async (e) => {
+      try {
+        const res = await fetch(e.url);
+        const blob = await res.blob();
+        return { name: e.path.split('/').pop(), url: e.url, size: blob.size };
+      } catch (err) {
+        return { name: e.path.split('/').pop(), url: e.url, size: 0 };
+      }
+    })).then(setImages);
+  }, []);
+
+  const fmt = (n) => n >= 1e6 ? (n/1e6).toFixed(2)+' MB' : (n/1e3).toFixed(1)+' KB';
+
   return (
     <section className="zhg-section zhg-section--alt">
       <div className="zhg-wrap-lg">
         <div className="zhg-eyebrow">Media</div>
         <div className="zhg-section-head">
           <h2 className="zhg-display">Photos</h2>
-          <div className="zhg-section-note">Click any tile to upload. Images stay in this browser session only.</div>
+          <div className="zhg-section-note">Thumbnails are shown at a uniform 4:3 ratio. Sizes are measured from <code>src/Pictures</code>.</div>
         </div>
+
+        {images.length === 0 ? (
+          <div style={{ color: 'var(--ink-faint)' }}>No images found in <strong>src/Pictures</strong>. You can still upload images using the tiles below.</div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
+              {images.map((im, i) => (
+                <div key={i} style={{ borderRadius: 8, overflow: 'hidden', background: 'var(--panel)' }}>
+                  <div style={{ position: 'relative', width: '100%', paddingBottom: '75%' }}>
+                    <img src={im.url} alt={im.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  </div>
+                  <div style={{ padding: 8, fontSize: 12, color: 'var(--ink-dim)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{im.name}</span>
+                    <span>{fmt(im.size)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--ink-dim)', fontSize: 12 }}>
+                    <th style={{ padding: 8 }}>File</th>
+                    <th style={{ padding: 8 }}>Size</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {images.map((im, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--line)', color: 'var(--ink)' }}>
+                      <td style={{ padding: 8 }}>{im.name}</td>
+                      <td style={{ padding: 8 }}>{fmt(im.size)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
         <div className="zhg-masonry">
-          {slots.map((s, i) => <PhotoSlot key={i} label={s} height="100%" />)}
+          {/* Keep interactive upload tiles for manual uploads (session-only) */}
+          {['Conference', 'Campus or lab', 'Award ceremony', 'Research team', 'Additional'].map((s, i) => (
+            <PhotoSlot key={i} label={s} height="100%" />
+          ))}
         </div>
       </div>
     </section>
@@ -622,7 +713,7 @@ function Gallery() {
 /* ─── FOOTER ────────────────────────────────────────────────────────── */
 function Footer() {
   return (
-    <footer className="zhg-footer">
+    <footer id="contact" className="zhg-footer">
       <div className="zhg-wrap-lg" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--ink-faint)' }}>
           Zemenfes Hailemariam Gebremedhin · Istanbul, Türkiye
@@ -638,10 +729,22 @@ function Footer() {
 }
 
 /* ─── ROOT ──────────────────────────────────────────────────────────── */
+function TopTabs() {
+  return (
+    <nav style={{ position: 'sticky', top: 0, display: 'flex', gap: 12, padding: '8px 12px', justifyContent: 'center', background: 'rgba(10,14,18,0.85)', zIndex: 120 }}>
+      <a href="#home" style={{ color: 'var(--ink)', opacity: 0.9 }} title="Home"><Home size={18} /></a>
+      <a href="#about" style={{ color: 'var(--ink)', opacity: 0.9 }} title="About"><User size={18} /></a>
+      <a href="#publications" style={{ color: 'var(--ink)', opacity: 0.9 }} title="Publications"><Book size={18} /></a>
+      <a href="#timeline" style={{ color: 'var(--ink)', opacity: 0.9 }} title="Timeline"><Calendar size={18} /></a>
+      <a href="#contact" style={{ color: 'var(--ink)', opacity: 0.9 }} title="Contact"><Mail size={18} /></a>
+    </nav>
+  );
+}
 export default function Portfolio() {
   return (
     <div className="zhg-root">
       <style>{TOKENS}</style>
+      <TopTabs />
       <Hero />
       <Focus />
       <About />
