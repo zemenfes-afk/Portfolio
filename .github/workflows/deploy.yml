@@ -1,0 +1,46 @@
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' 
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the React app
+        run: npm run build
+
+      - name: Push dist folder to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # This checks if GitHub is actually reading your secret
+          if [ -z "$HF_TOKEN" ]; then
+            echo "🚨 ERROR: HF_TOKEN is empty! GitHub is not reading the secret correctly."
+            exit 1
+          fi
+          
+          cd dist
+          git init
+          git checkout -b main
+          git add .
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit -m "Automated deployment to Hugging Face"
+          
+          # Push to Hugging Face
+          git remote add origin "https://zemen:${HF_TOKEN}@huggingface.co/spaces/zemen/Portfolio"
+          git push -f origin main
