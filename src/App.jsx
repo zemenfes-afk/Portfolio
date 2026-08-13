@@ -437,7 +437,7 @@ function Hero() {
           <div className="zhg-fade">
             <div className="zhg-kicker-pill"><span className="zhg-kicker-dot" /> M.Sc. CyberMACS · Kadir Has University</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-              <PhotoSlot label="Profile picture" height={140} storageKey="userPhoto1" defaultSrc={samplePhoto} circle={true} />
+              <PhotoSlot label="Profile picture" height={140} defaultSrc={samplePhoto} circle={true} />
               <div>
                 <h1 className="zhg-display">Zemenfes<br/>Hailemariam<br/>Gebremedhin</h1>
                 <p className="zhg-hero-lede">
